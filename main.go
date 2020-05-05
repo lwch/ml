@@ -39,7 +39,7 @@ func (m *model) loss(a, b float64, x, y []float64) float64 {
 		d *= d
 		total += d
 	}
-	return total / float64(len(x))
+	return total / float64(len(x)) / .5
 }
 
 func (m *model) optimize(a, b float64, x, y []float64) (float64, float64) {
