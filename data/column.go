@@ -8,6 +8,7 @@ const (
 	columnTime columnType = iota
 	columnString
 	columnInt
+	columnFloat
 )
 
 // Column data column
@@ -29,6 +30,11 @@ func NewIntColumn(name string, idx int) Column {
 	return Column{index: idx, name: name, t: columnInt}
 }
 
+// NewFloatColumn create int column
+func NewFloatColumn(name string, idx int) Column {
+	return Column{index: idx, name: name, t: columnFloat}
+}
+
 // NewTimeColumn create time column
 func NewTimeColumn(name string, idx int, parse func(string) time.Time, format func(time.Time) string) Column {
 	return Column{
@@ -38,4 +44,9 @@ func NewTimeColumn(name string, idx int, parse func(string) time.Time, format fu
 		timeParse:  parse,
 		timeFormat: format,
 	}
+}
+
+// GetName get name of column
+func (c *Column) GetName() string {
+	return c.name
 }

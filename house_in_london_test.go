@@ -21,7 +21,7 @@ func TestHouseInLondon(t *testing.T) {
 	d.AddColumn(data.NewIntColumn("average_price", 2))
 	d.AddColumn(data.NewStringColumn("code", 3))
 	d.AddColumn(data.NewIntColumn("houses_sold", 4))
-	d.AddColumn(data.NewIntColumn("no_of_crimes", 5))
+	d.AddColumn(data.NewFloatColumn("no_of_crimes", 5))
 	d.AddColumn(data.NewIntColumn("borough_flag", 6))
 	// load data
 	f, err := os.Open("test_data/house_in_london.csv")
@@ -33,5 +33,15 @@ func TestHouseInLondon(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Println(d.CSV())
+	for _, col := range d.Columns() {
+		fmt.Printf("column %s:\n", col.GetName())
+		fmt.Println(d.Statistics(col))
+	}
+	fmt.Println("==================================")
+	d.Fill(d.GetColumnByName("houses_sold"), data.Mean)
+	d.Fill(d.GetColumnByName("no_of_crimes"), data.Mean)
+	for _, col := range d.Columns() {
+		fmt.Printf("column %s:\n", col.GetName())
+		fmt.Println(d.Statistics(col))
+	}
 }

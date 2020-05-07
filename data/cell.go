@@ -10,12 +10,16 @@ type Cell struct {
 	t          columnType
 	s          string
 	i          int
+	f          float64
 	ts         time.Time
 	timeFormat func(time.Time) string
 	empty      bool
 }
 
 func (c *Cell) String() string {
+	if c.empty {
+		return "<null>"
+	}
 	switch c.t {
 	case columnString:
 		return c.s
