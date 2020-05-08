@@ -279,7 +279,7 @@ func (d *Data) statisticsString(c *Column) string {
 }
 
 // Fill fill missing data
-func (d *Data) Fill(c *Column, fn func(*Data, *Column) (*Cell, bool)) {
+func (d *Data) Fill(c *Column, fn numberFunc) {
 	cell, ok := fn(d, c)
 	if !ok {
 		return
@@ -300,28 +300,62 @@ func (d *Data) Fill(c *Column, fn func(*Data, *Column) (*Cell, bool)) {
 	}
 }
 
-// Mean fill data by mean value
-func Mean(d *Data, c *Column) (*Cell, bool) {
-	switch c.t {
-	case columnInt:
-		var total int
-		for _, row := range d.cellsByIndex {
-			total += row[c.index].i
-		}
-		return &Cell{
-			t: c.t,
-			i: total / len(d.cellsByIndex),
-		}, true
-	case columnFloat:
-		var total float64
-		for _, row := range d.cellsByIndex {
-			total += row[c.index].f
-		}
-		return &Cell{
-			t: c.t,
-			f: total / float64(len(d.cellsByIndex)),
-		}, true
-	default:
-		return nil, false
+// Normalize normalize data
+func (d *Data) Normalize(c *Column, max numberFunc) {
+	cell, ok := max(d, c)
+	if !ok {
+		return
 	}
+	for i, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		row[c.index].div(cell)
+		d.cellsByIndex[i] = row
+	}
+	c.t = columnFloat
+}
+
+// NormalizeString normalize string data
+func (d *Data) NormalizeString(c *Column, hash hashFunc) {
+	if c.t != columnString {
+		return
+	}
+	for i, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		row[c.index].i = hash(row[c.index])
+		row[c.index].t = columnInt
+		d.cellsByIndex[i] = row
+	}
+	c.t = columnInt
+}
+
+// NormalizeStringEncode normalize string by encode
+func (d *Data) NormalizeStringEncode(c *Column) {
+	if c.t != columnString {
+		return
+	}
+	encode := make(map[string]int)
+	for _, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		encode[row[c.index].s] = 0
+	}
+	var i int
+	for k := range encode {
+		encode[k] = i
+		i++
+	}
+	for i, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		row[c.index].t = columnInt
+		row[c.index].i = encode[row[c.index].s]
+		d.cellsByIndex[i] = row
+	}
+	c.t = columnInt
 }

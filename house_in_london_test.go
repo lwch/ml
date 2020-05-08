@@ -37,9 +37,24 @@ func TestHouseInLondon(t *testing.T) {
 		fmt.Printf("column %s:\n", col.GetName())
 		fmt.Println(d.Statistics(col))
 	}
-	fmt.Println("==================================")
+	fmt.Println("=============== fill data ===================")
 	d.Fill(d.GetColumnByName("houses_sold"), data.Mean)
 	d.Fill(d.GetColumnByName("no_of_crimes"), data.Mean)
+	for _, col := range d.Columns() {
+		fmt.Printf("column %s:\n", col.GetName())
+		fmt.Println(d.Statistics(col))
+	}
+	fmt.Println("=============== normalize ===================")
+	d.Normalize(d.GetColumnByName("average_price"), data.Max)
+	d.Normalize(d.GetColumnByName("houses_sold"), data.Max)
+	d.Normalize(d.GetColumnByName("no_of_crimes"), data.Max)
+	d.Normalize(d.GetColumnByName("borough_flag"), data.Max)
+	// d.NormalizeString(d.GetColumnByName("area"), data.Length)
+	// d.NormalizeString(d.GetColumnByName("code"), data.Length)
+	d.NormalizeStringEncode(d.GetColumnByName("area"))
+	d.NormalizeStringEncode(d.GetColumnByName("code"))
+	d.Normalize(d.GetColumnByName("area"), data.Max)
+	d.Normalize(d.GetColumnByName("code"), data.Max)
 	for _, col := range d.Columns() {
 		fmt.Printf("column %s:\n", col.GetName())
 		fmt.Println(d.Statistics(col))

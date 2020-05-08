@@ -31,3 +31,26 @@ func (c *Cell) String() string {
 		return ""
 	}
 }
+
+func (c *Cell) div(target *Cell) {
+	switch c.t {
+	case columnInt:
+		switch target.t {
+		case columnInt:
+			c.t = columnFloat
+			c.f = float64(c.i) / float64(target.i)
+		case columnFloat:
+			c.t = columnFloat
+			c.f = float64(c.i) / target.f
+		}
+	case columnFloat:
+		switch target.t {
+		case columnInt:
+			c.t = columnFloat
+			c.f = c.f / float64(target.i)
+		case columnFloat:
+			c.t = columnFloat
+			c.f = c.f / target.f
+		}
+	}
+}
