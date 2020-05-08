@@ -359,3 +359,45 @@ func (d *Data) NormalizeStringEncode(c *Column) {
 	}
 	c.t = columnInt
 }
+
+// AddX0 add x0=1
+func (d *Data) AddX0() {
+	reset := make(map[int]*Column)
+	for i, column := range d.columnsByIndex {
+		column.index++
+		reset[i+1] = column
+	}
+	reset[0] = &Column{t: columnFloat, index: 0, name: "x0"}
+	d.columnsByIndex = reset
+	d.columnsByName[reset[0].name] = reset[0]
+	for i, row := range d.cellsByIndex {
+		reset := make(map[int]*Cell)
+		for j, cell := range row {
+			reset[j+1] = cell
+		}
+		reset[0] = &Cell{t: columnFloat, f: 1}
+		d.cellsByIndex[i] = reset
+		d.cellsByName[i][d.columnsByIndex[0].name] = reset[0]
+	}
+}
+
+// Total get data counts
+func (d *Data) Total() int {
+	return len(d.cellsByIndex)
+}
+
+// GetColumns get columns of row
+func (d *Data) GetColumns(row int, want []int) []*Cell {
+	sort.Ints(want)
+	cols := d.cellsByIndex[row]
+	ret := make([]*Cell, len(want))
+	for i, idx := range want {
+		ret[i] = cols[idx]
+	}
+	return ret
+}
+
+// GetFloat get float value of cell
+func (d *Data) GetFloat(row, col int) float64 {
+	return d.cellsByIndex[row][col].f
+}

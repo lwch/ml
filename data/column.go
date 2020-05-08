@@ -50,3 +50,8 @@ func NewTimeColumn(name string, idx int, parse func(string) time.Time, format fu
 func (c *Column) GetName() string {
 	return c.name
 }
+
+// GetIndex get index of column
+func (c *Column) GetIndex() int {
+	return c.index
+}

@@ -54,3 +54,11 @@ func (c *Cell) div(target *Cell) {
 		}
 	}
 }
+
+// Float get float value
+func (c *Cell) Float() float64 {
+	if c.t != columnFloat {
+		return 0
+	}
+	return c.f
+}
