@@ -1,49 +1,42 @@
 package model
 
-import (
-	"ml/data"
-	"sort"
-)
-
 // LinearRegression linear regression
 type LinearRegression struct {
 	theta []float64
 }
 
-func (lr *LinearRegression) hop(row []*data.Cell) float64 {
+func (lr *LinearRegression) hop(row []float64) float64 {
 	var ret float64
 	for i, cell := range row {
-		ret += lr.theta[i] * cell.Float()
+		ret += lr.theta[i] * cell
 	}
 	return ret
 }
 
 // Loss loss func
-func (lr *LinearRegression) Loss(d *data.Data, features []int, label int) float64 {
-	sort.Ints(features)
+func (lr *LinearRegression) Loss(features [][]float64, labels []float64) float64 {
 	var total float64
-	for i := 0; i < d.Total(); i++ {
-		n := lr.hop(d.GetColumns(i, features)) - d.GetFloat(i, label)
+	for i, row := range features {
+		n := lr.hop(row) - labels[i]
 		total += n * n
 	}
-	return total / (2. * float64(d.Total()))
+	return total / (2. * float64(len(features)))
 }
 
 // Begin begin train
-func (lr *LinearRegression) Begin(features []int) {
-	lr.theta = make([]float64, len(features))
+func (lr *LinearRegression) Begin(featureCount int) {
+	lr.theta = make([]float64, featureCount)
 }
 
 // Train train data one times
-func (lr *LinearRegression) Train(rate float64, d *data.Data, features []int, label int) {
-	sort.Ints(features)
-	for j := 0; j < len(features); j++ {
+func (lr *LinearRegression) Train(rate float64, features [][]float64, labels []float64) {
+	for j := 0; j < len(features[0]); j++ {
 		var total float64
-		for i := 0; i < d.Total(); i++ {
-			loss := lr.hop(d.GetColumns(i, features)) - d.GetFloat(i, label)
-			total += loss * d.GetFloat(i, features[j])
+		for i, row := range features {
+			loss := lr.hop(row) - labels[i]
+			total += loss * row[j]
 		}
-		lr.theta[j] -= rate * total / float64(d.Total())
+		lr.theta[j] -= rate * total / float64(len(features))
 	}
 }
 

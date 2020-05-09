@@ -386,18 +386,34 @@ func (d *Data) Total() int {
 	return len(d.cellsByIndex)
 }
 
-// GetColumns get columns of row
-func (d *Data) GetColumns(row int, want []int) []*Cell {
-	sort.Ints(want)
-	cols := d.cellsByIndex[row]
-	ret := make([]*Cell, len(want))
-	for i, idx := range want {
-		ret[i] = cols[idx]
+// GetMatrix get feature matrix
+func (d *Data) GetMatrix(cols ...int) [][]float64 {
+	ret := make([][]float64, len(d.cellsByIndex))
+	if len(cols) == 0 {
+		for i, row := range d.cellsByIndex {
+			features := make([]float64, len(row))
+			for j, cell := range row {
+				features[j] = cell.f
+			}
+			ret[i] = features
+		}
+		return ret
+	}
+	for i, row := range d.cellsByIndex {
+		features := make([]float64, len(cols))
+		for j, col := range cols {
+			features[j] = row[col].f
+		}
+		ret[i] = features
 	}
 	return ret
 }
 
-// GetFloat get float value of cell
-func (d *Data) GetFloat(row, col int) float64 {
-	return d.cellsByIndex[row][col].f
+// GetLables get label matrix
+func (d *Data) GetLables(c *Column) []float64 {
+	ret := make([]float64, len(d.cellsByIndex))
+	for i, row := range d.cellsByIndex {
+		ret[i] = row[c.index].f
+	}
+	return ret
 }
