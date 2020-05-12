@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+const batchCount = 100000
+const learnRate = 0.1
+const epoch = 500
+
 func TestHouseInLondon(t *testing.T) {
 	d := data.NewData()
 	// def columns
@@ -64,15 +68,20 @@ func TestHouseInLondon(t *testing.T) {
 		fmt.Println(d.Statistics(col))
 	}
 	fmt.Println("=============== train ===================")
-	// cols := []string{"x0", "area", "average_price", "code", "houses_sold", "no_of_crimes"}
-	cols := []string{"x0", "area", "code", "houses_sold", "no_of_crimes"}
+	cols := []string{"x0", "area", "average_price", "code", "houses_sold", "no_of_crimes"}
+	// cols := []string{"x0", "area", "code", "houses_sold", "no_of_crimes"}
 	index := make([]int, len(cols))
 	for i, col := range cols {
 		index[i] = d.GetColumnByName(col).GetIndex()
 	}
 	features := d.GetMatrix(index...)
-	var lr model.LinearRegression
 	labels := d.GetLables(d.GetColumnByName("borough_flag"))
+	// linearRegression(features, labels, cols)
+	logisticRegression(features, labels, cols)
+}
+
+func linearRegression(features [][]float64, labels []float64, cols []string) {
+	var lr model.LinearRegression
 	lr.Begin(len(features[0]))
 	show := func() {
 		params := lr.Params()
@@ -82,9 +91,34 @@ func TestHouseInLondon(t *testing.T) {
 		}
 		fmt.Println(strings.Join(arr, "; "))
 	}
-	for i := 0; i < 100000; i++ {
-		lr.Train(0.01, features, labels)
-		if i%500 == 0 {
+	for i := 0; i < batchCount; i++ {
+		lr.Train(learnRate, features, labels)
+		if i%epoch == 0 {
+			fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
+			show()
+		}
+	}
+	fmt.Println("=============== predict ===================")
+	for i := 0; i < 10; i++ {
+		row := rand.Int() % len(features)
+		fmt.Println("predict=", lr.Predict(features[row]), "accurate=", labels[row])
+	}
+}
+
+func logisticRegression(features [][]float64, labels []float64, cols []string) {
+	var lr model.LogisticRegression
+	lr.Begin(len(features[0]))
+	show := func() {
+		params := lr.Params()
+		arr := make([]string, len(params))
+		for i, col := range cols {
+			arr[i] = col + "=" + fmt.Sprintf("%f", params[i])
+		}
+		fmt.Println(strings.Join(arr, "; "))
+	}
+	for i := 0; i < batchCount; i++ {
+		lr.Train(learnRate, features, labels)
+		if i%epoch == 0 {
 			fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
 			show()
 		}
