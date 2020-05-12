@@ -5,19 +5,11 @@ type LinearRegression struct {
 	theta []float64
 }
 
-func (lr *LinearRegression) hop(row []float64) float64 {
-	var ret float64
-	for i, cell := range row {
-		ret += lr.theta[i] * cell
-	}
-	return ret
-}
-
 // Loss loss func
 func (lr *LinearRegression) Loss(features [][]float64, labels []float64) float64 {
 	var total float64
 	for i, row := range features {
-		n := lr.hop(row) - labels[i]
+		n := lr.Predict(row) - labels[i]
 		total += n * n
 	}
 	return total / (2. * float64(len(features)))
@@ -33,7 +25,7 @@ func (lr *LinearRegression) Train(rate float64, features [][]float64, labels []f
 	for j := 0; j < len(features[0]); j++ {
 		var total float64
 		for i, row := range features {
-			loss := lr.hop(row) - labels[i]
+			loss := lr.Predict(row) - labels[i]
 			total += loss * row[j]
 		}
 		lr.theta[j] -= rate * total / float64(len(features))

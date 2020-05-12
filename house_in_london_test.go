@@ -64,7 +64,8 @@ func TestHouseInLondon(t *testing.T) {
 		fmt.Println(d.Statistics(col))
 	}
 	fmt.Println("=============== train ===================")
-	cols := []string{"x0", "area", "average_price", "code", "houses_sold", "no_of_crimes"}
+	// cols := []string{"x0", "area", "average_price", "code", "houses_sold", "no_of_crimes"}
+	cols := []string{"x0", "area", "code", "houses_sold", "no_of_crimes"}
 	index := make([]int, len(cols))
 	for i, col := range cols {
 		index[i] = d.GetColumnByName(col).GetIndex()
@@ -83,12 +84,11 @@ func TestHouseInLondon(t *testing.T) {
 	}
 	for i := 0; i < 100000; i++ {
 		lr.Train(0.01, features, labels)
-		fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
-		if i%50 == 0 {
+		if i%500 == 0 {
+			fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
 			show()
 		}
 	}
-	show()
 	fmt.Println("=============== predict ===================")
 	for i := 0; i < 10; i++ {
 		row := rand.Int() % len(features)
