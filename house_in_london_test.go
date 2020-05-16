@@ -6,7 +6,6 @@ import (
 	"ml/data"
 	"ml/model"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 const batchCount = 100000
 const learnRate = 0.1
 const epoch = 500
+const predictCount = 100
 
 func TestHouseInLondon(t *testing.T) {
 	d := data.NewData()
@@ -81,30 +81,41 @@ func TestHouseInLondon(t *testing.T) {
 	}
 	features := d.GetMatrix(index...)
 	labels := d.GetLables(d.GetColumnByName("borough_flag"))
-	// linearRegression(features, labels, cols)
-	logisticRegression(features, labels, cols)
+	linearRegression(features, labels, cols)
+	// logisticRegression(features, labels, cols)
 }
 
 func linearRegression(features [][]float64, labels []float64, cols []string) {
 	var lr model.LinearRegression
 	lr.Begin(len(features[0]))
-	show := func() {
+	samples, test := selectSampleAndTest(features, labels, 0.6)
+	show := func(i int) {
+		w := tablewriter.NewWriter(os.Stdout)
+		w.Append([]string{
+			fmt.Sprintf("%d", i),
+			fmt.Sprintf("%f", lr.Loss(test.features, test.labels)),
+		})
 		params := lr.Params()
-		arr := make([]string, len(params))
 		for i, col := range cols {
-			arr[i] = col + "=" + fmt.Sprintf("%f", params[i])
+			w.Append([]string{
+				col,
+				fmt.Sprintf("%f", params[i]),
+			})
 		}
-		fmt.Println(strings.Join(arr, "; "))
+		w.Render()
 	}
+	var offset int
+	const count = 100
 	for i := 0; i < batchCount; i++ {
-		lr.Train(learnRate, features, labels)
+		batch := selectBatch(samples, offset, count)
+		lr.Train(learnRate, batch.features, batch.labels)
 		if i%epoch == 0 {
-			fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
-			show()
+			show(i)
 		}
+		offset += count
 	}
 	fmt.Println("=============== predict ===================")
-	for i := 0; i < 10; i++ {
+	for i := 0; i < predictCount; i++ {
 		row := rand.Int() % len(features)
 		fmt.Println("predict=", lr.Predict(features[row]), "accurate=", labels[row])
 	}
@@ -133,14 +144,14 @@ func logisticRegression(features [][]float64, labels []float64, cols []string) {
 	const count = 100
 	for i := 0; i < batchCount; i++ {
 		batch := selectBatch(samples, offset, count)
-		lr.Train(learnRate, 0.1, batch.features, batch.labels)
+		lr.Train(learnRate, batch.features, batch.labels)
 		if i%epoch == 0 {
 			show(i)
 		}
 		offset += count
 	}
 	fmt.Println("=============== predict ===================")
-	for i := 0; i < 100; i++ {
+	for i := 0; i < predictCount; i++ {
 		row := rand.Int() % len(features)
 		fmt.Println("predict=", lr.Predict(features[row]), "accurate=", labels[row])
 	}
