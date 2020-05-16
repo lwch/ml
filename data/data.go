@@ -8,6 +8,7 @@ import (
 	"ml/constant"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -31,9 +32,10 @@ func NewData() *Data {
 }
 
 // AddColumn add column definition
-func (d *Data) AddColumn(col Column) {
+func (d *Data) AddColumn(col Column) *Column {
 	d.columnsByIndex[col.index] = &col
 	d.columnsByName[col.name] = &col
+	return &col
 }
 
 // GetColumnByIndex get column by index
@@ -358,6 +360,77 @@ func (d *Data) NormalizeStringEncode(c *Column) {
 		d.cellsByIndex[i] = row
 	}
 	c.t = columnInt
+}
+
+// NormalizeStringOneHot normalize string by onehot encoding
+func (d *Data) NormalizeStringOneHot(c *Column) {
+	if c.t != columnString {
+		return
+	}
+	encode := make(map[string]int)
+	for _, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		encode[row[c.index].s] = 0
+	}
+	idx := d.maxIndex() + 1
+	offset := idx
+	count := 0
+	cols := make([]*Column, 0, len(encode))
+	for k := range encode {
+		encode[k] = count
+		cols = append(cols, d.AddColumn(NewFloatColumn(c.name+"_onehot_"+k, idx)))
+		idx++
+		count++
+	}
+	for _, col := range cols {
+		d.columnsByIndex[col.index] = col
+		d.columnsByName[col.name] = col
+	}
+	for i, row := range d.cellsByIndex {
+		if row[c.index].empty {
+			continue
+		}
+		for j := 0; j < count; j++ {
+			if j == encode[row[c.index].s] {
+				cell := &Cell{t: columnFloat, f: 1}
+				row[offset+j] = cell
+				d.cellsByIndex[i] = row
+				rowName := d.cellsByName[i]
+				rowName[cols[j].name] = cell
+				d.cellsByName[i] = rowName
+				continue
+			}
+			cell := &Cell{t: columnFloat, f: 0}
+			row[offset+j] = cell
+			d.cellsByIndex[i] = row
+			rowName := d.cellsByName[i]
+			rowName[cols[j].name] = cell
+			d.cellsByName[i] = rowName
+		}
+	}
+}
+
+// GetOneHotColumnNames get one hot column names
+func (d *Data) GetOneHotColumnNames(name string) []string {
+	ret := make([]string, 0, len(d.cellsByName))
+	for cName := range d.columnsByName {
+		if strings.HasPrefix(cName, name+"_onehot_") {
+			ret = append(ret, cName)
+		}
+	}
+	return ret
+}
+
+func (d *Data) maxIndex() int {
+	var ret int
+	for _, column := range d.columnsByIndex {
+		if column.index > ret {
+			ret = column.index
+		}
+	}
+	return ret
 }
 
 // AddX0 add x0=1

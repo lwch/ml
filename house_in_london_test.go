@@ -58,18 +58,21 @@ func TestHouseInLondon(t *testing.T) {
 	d.Normalize(d.GetColumnByName("borough_flag"), data.Max)
 	// d.NormalizeString(d.GetColumnByName("area"), data.Length)
 	// d.NormalizeString(d.GetColumnByName("code"), data.Length)
-	d.NormalizeStringEncode(d.GetColumnByName("area"))
-	d.NormalizeStringEncode(d.GetColumnByName("code"))
-	d.Normalize(d.GetColumnByName("area"), data.Max)
-	d.Normalize(d.GetColumnByName("code"), data.Max)
+	// d.NormalizeStringEncode(d.GetColumnByName("area"))
+	// d.NormalizeStringEncode(d.GetColumnByName("code"))
+	// d.Normalize(d.GetColumnByName("area"), data.Max)
+	// d.Normalize(d.GetColumnByName("code"), data.Max)
+	d.NormalizeStringOneHot(d.GetColumnByName("area"))
+	d.NormalizeStringOneHot(d.GetColumnByName("code"))
 	d.AddX0()
 	for _, col := range d.Columns() {
 		fmt.Printf("column %s:\n", col.GetName())
 		fmt.Println(d.Statistics(col))
 	}
 	fmt.Println("=============== train ===================")
-	cols := []string{"x0", "area", "average_price", "code", "houses_sold", "no_of_crimes"}
-	// cols := []string{"x0", "area", "code", "houses_sold", "no_of_crimes"}
+	cols := []string{"x0", "average_price", "houses_sold", "no_of_crimes"}
+	cols = append(cols, d.GetOneHotColumnNames("area")...)
+	cols = append(cols, d.GetOneHotColumnNames("code")...)
 	index := make([]int, len(cols))
 	for i, col := range cols {
 		index[i] = d.GetColumnByName(col).GetIndex()
@@ -116,16 +119,62 @@ func logisticRegression(features [][]float64, labels []float64, cols []string) {
 		}
 		fmt.Println(strings.Join(arr, "; "))
 	}
+	samples, test := selectSampleAndTest(features, labels, 0.6)
+	var offset int
+	const count = 100
 	for i := 0; i < batchCount; i++ {
-		lr.Train(learnRate, features, labels)
+		batch := selectBatch(samples, offset, count)
+		lr.Train(learnRate, 0.1, batch.features, batch.labels)
 		if i%epoch == 0 {
-			fmt.Printf("%d: loss=%f\n", i, lr.Loss(features, labels))
+			fmt.Printf("%d: loss=%f\n", i, lr.Loss(test.features, test.labels))
 			show()
 		}
+		offset += count
 	}
 	fmt.Println("=============== predict ===================")
 	for i := 0; i < 10; i++ {
 		row := rand.Int() % len(features)
 		fmt.Println("predict=", lr.Predict(features[row]), "accurate=", labels[row])
 	}
+}
+
+type kv struct {
+	features [][]float64
+	labels   []float64
+}
+
+// return samples, test
+func selectSampleAndTest(features [][]float64, labels []float64, sampleRate float64) (kv, kv) {
+	if sampleRate < 0 || sampleRate > 1 {
+		sampleRate = .6
+	}
+	var samples, test kv
+	samples.features = make([][]float64, 0, int(float64(len(features))*sampleRate))
+	samples.labels = make([]float64, 0, len(samples.features))
+	test.features = make([][]float64, 0, len(features)-len(samples.features))
+	test.labels = make([]float64, 0, len(features)-len(samples.features))
+	for i, row := range features {
+		if rand.Float64() <= sampleRate {
+			samples.features = append(samples.features, row)
+			samples.labels = append(samples.labels, labels[i])
+		} else {
+			test.features = append(test.features, row)
+			test.labels = append(test.labels, labels[i])
+		}
+	}
+	return samples, test
+}
+
+func selectBatch(matrix kv, offset, count int) kv {
+	var ret kv
+	ret.features = make([][]float64, count)
+	ret.labels = make([]float64, count)
+	j := 0
+	n := len(matrix.features)
+	for i := 0; i < count; i++ {
+		ret.features[j] = matrix.features[(offset+i)%n]
+		ret.labels[j] = matrix.labels[(offset+i)%n]
+		j++
+	}
+	return ret
 }

@@ -1,6 +1,9 @@
 package data
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type columnType int
 
@@ -54,4 +57,9 @@ func (c *Column) GetName() string {
 // GetIndex get index of column
 func (c *Column) GetIndex() int {
 	return c.index
+}
+
+// String get string value
+func (c *Column) String() string {
+	return fmt.Sprintf("%s(%d)", c.name, c.index)
 }
