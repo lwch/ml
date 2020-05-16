@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/olekukonko/tablewriter"
 )
 
 const batchCount = 100000
@@ -111,28 +113,34 @@ func linearRegression(features [][]float64, labels []float64, cols []string) {
 func logisticRegression(features [][]float64, labels []float64, cols []string) {
 	var lr model.LogisticRegression
 	lr.Begin(len(features[0]))
-	show := func() {
-		params := lr.Params()
-		arr := make([]string, len(params))
-		for i, col := range cols {
-			arr[i] = col + "=" + fmt.Sprintf("%f", params[i])
-		}
-		fmt.Println(strings.Join(arr, "; "))
-	}
 	samples, test := selectSampleAndTest(features, labels, 0.6)
+	show := func(i int) {
+		w := tablewriter.NewWriter(os.Stdout)
+		w.Append([]string{
+			fmt.Sprintf("%d", i),
+			fmt.Sprintf("%f", lr.Loss(test.features, test.labels)),
+		})
+		params := lr.Params()
+		for i, col := range cols {
+			w.Append([]string{
+				col,
+				fmt.Sprintf("%f", params[i]),
+			})
+		}
+		w.Render()
+	}
 	var offset int
 	const count = 100
 	for i := 0; i < batchCount; i++ {
 		batch := selectBatch(samples, offset, count)
 		lr.Train(learnRate, 0.1, batch.features, batch.labels)
 		if i%epoch == 0 {
-			fmt.Printf("%d: loss=%f\n", i, lr.Loss(test.features, test.labels))
-			show()
+			show(i)
 		}
 		offset += count
 	}
 	fmt.Println("=============== predict ===================")
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		row := rand.Int() % len(features)
 		fmt.Println("predict=", lr.Predict(features[row]), "accurate=", labels[row])
 	}
